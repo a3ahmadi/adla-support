@@ -1,8 +1,15 @@
 from rest_framework import serializers
 from .models import Ticket, TicketMessage, MessageRead
+from .validators import (
+    validate_image_file,
+    validate_voice_file,
+)
+from .validators import validate_message_content
 
 class TicketListSerializer(serializers.ModelSerializer):
-    unread_count = serializers.SerializerMethodField()
+    unread_count = serializers.IntegerField(
+        read_only=True
+    )
 
     class Meta:
         model = Ticket
@@ -16,13 +23,6 @@ class TicketListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-
-    def get_unread_count(self, obj):
-        user = self.context["request"].user
-
-        return obj.messages.exclude(
-            reads__user=user
-        ).count()
 
 
 class TicketMessageSerializer(serializers.ModelSerializer):
@@ -66,29 +66,11 @@ class TicketMessageSerializer(serializers.ModelSerializer):
         ).exists()
 
     def validate(self, attrs):
-        message_type = attrs.get("message_type")
-        text = attrs.get("text", "").strip()
-        file = attrs.get("file")
-
-        if message_type == TicketMessage.MessageType.TEXT:
-            if not text:
-                raise serializers.ValidationError({
-                    "text": "متن پیام الزامی است."
-                })
-
-            if file:
-                raise serializers.ValidationError({
-                    "file": "پیام متنی نباید فایل داشته باشد."
-                })
-
-        elif message_type in [
-            TicketMessage.MessageType.IMAGE,
-            TicketMessage.MessageType.VOICE,
-        ]:
-            if not file:
-                raise serializers.ValidationError({
-                    "file": "برای این نوع پیام ارسال فایل الزامی است."
-                })
+        validate_message_content(
+            message_type=attrs.get("message_type"),
+            text=attrs.get("text"),
+            file=attrs.get("file"),
+        )
 
         return attrs
 

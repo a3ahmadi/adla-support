@@ -1,6 +1,8 @@
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 
+from .pagination import TicketPagination
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -29,7 +31,6 @@ class TicketListCreateView(APIView):
         tickets = (
             Ticket.objects
             .filter(user=request.user)
-            .select_related("user")
             .annotate(
                 unread_count=Count(
                     "messages",
@@ -60,13 +61,22 @@ class TicketListCreateView(APIView):
                 | Q(subject__icontains=search)
             )
 
-        serializer = TicketListSerializer(
+        paginator = TicketPagination()
+
+        page = paginator.paginate_queryset(
             tickets,
+            request,
+        )
+
+        serializer = TicketListSerializer(
+            page,
             many=True,
             context={"request": request},
         )
 
-        return Response(serializer.data)
+        return paginator.get_paginated_response(
+            serializer.data
+        )
 
     def post(self, request):
         serializer = TicketCreateSerializer(
@@ -121,7 +131,8 @@ class TicketDetailView(APIView):
     def get_object(self, request, ticket_number):
         ticket = get_object_or_404(
             Ticket.objects.prefetch_related(
-                "messages__reads"
+                "messages__reads",
+                "messages__sender",
             ),
             ticket_number=ticket_number,
         )
