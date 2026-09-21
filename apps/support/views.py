@@ -135,6 +135,7 @@ class TicketDetailView(APIView):
                 "messages__sender",
             ),
             ticket_number=ticket_number,
+            user=request.user,
         )
 
         self.check_object_permissions(request, ticket)
@@ -165,6 +166,7 @@ class TicketMessageCreateView(APIView):
         ticket = get_object_or_404(
             Ticket,
             ticket_number=ticket_number,
+            user=request.user,
         )
 
         self.check_object_permissions(request, ticket)
@@ -218,6 +220,7 @@ class TicketMarkReadView(APIView):
         ticket = get_object_or_404(
             Ticket,
             ticket_number=ticket_number,
+            user=request.user,
         )
 
         self.check_object_permissions(request, ticket)
@@ -253,6 +256,7 @@ class TicketCloseView(APIView):
         ticket = get_object_or_404(
             Ticket,
             ticket_number=ticket_number,
+            user=request.user,
         )
 
         self.check_object_permissions(request, ticket)
@@ -280,6 +284,7 @@ class TicketReopenView(APIView):
         ticket = get_object_or_404(
             Ticket,
             ticket_number=ticket_number,
+            user=request.user,
         )
 
         self.check_object_permissions(request, ticket)
