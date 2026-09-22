@@ -480,3 +480,53 @@ class AgentTicketMarkReadView(APIView):
         return Response({
             "detail": "پیام‌ها خوانده شدند."
         })
+
+
+class AgentTicketCloseView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSupportAgent,
+    ]
+
+    def post(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket,
+            ticket_number=ticket_number,
+        )
+
+        ticket = close_ticket(
+            ticket=ticket,
+            user=request.user,
+        )
+
+        return Response(
+            TicketDetailSerializer(
+                ticket,
+                context={"request": request},
+            ).data
+        )
+
+
+class AgentTicketReopenView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSupportAgent,
+    ]
+
+    def post(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket,
+            ticket_number=ticket_number,
+        )
+
+        ticket = reopen_ticket(
+            ticket=ticket,
+            user=request.user,
+        )
+
+        return Response(
+            TicketDetailSerializer(
+                ticket,
+                context={"request": request},
+            ).data
+        )
