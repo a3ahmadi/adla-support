@@ -76,7 +76,6 @@ class TicketMessageSerializer(serializers.ModelSerializer):
 
 
 class TicketDetailSerializer(serializers.ModelSerializer):
-    messages = TicketMessageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Ticket
@@ -86,15 +85,6 @@ class TicketDetailSerializer(serializers.ModelSerializer):
             "subject",
             "status",
             "priority",
-            "messages",
-            "created_at",
-            "updated_at",
-            "closed_at",
-        ]
-        read_only_fields = [
-            "id",
-            "ticket_number",
-            "status",
             "created_at",
             "updated_at",
             "closed_at",

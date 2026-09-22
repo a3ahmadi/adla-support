@@ -116,3 +116,14 @@ class TicketTests(APITestCase):
             response.data["results"][0]["subject"],
             "مشکل پرداخت",
         )
+
+
+def test_ticket_detail_does_not_include_messages(self):
+    self.client.force_authenticate(user=self.user)
+
+    response = self.client.get(
+        f"/support/tickets/{self.ticket.ticket_number}/"
+    )
+
+    self.assertEqual(response.status_code, 200)
+    self.assertNotIn("messages", response.data)

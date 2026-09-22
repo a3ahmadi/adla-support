@@ -1,7 +1,7 @@
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404
 
-from .pagination import TicketPagination
+from .pagination import TicketPagination, MessagePagination
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -130,10 +130,7 @@ class TicketDetailView(APIView):
 
     def get_object(self, request, ticket_number):
         ticket = get_object_or_404(
-            Ticket.objects.prefetch_related(
-                "messages__reads",
-                "messages__sender",
-            ),
+            Ticket,
             ticket_number=ticket_number,
             user=request.user,
         )
@@ -156,11 +153,48 @@ class TicketDetailView(APIView):
         return Response(serializer.data)
 
 
-class TicketMessageCreateView(APIView):
+class TicketMessageListCreateView(APIView):
     permission_classes = [
         IsAuthenticated,
         IsTicketOwner,
     ]
+
+    def get(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket,
+            ticket_number=ticket_number,
+            user=request.user,
+        )
+
+        self.check_object_permissions(
+            request,
+            ticket,
+        )
+
+        messages = (
+            TicketMessage.objects
+            .filter(ticket=ticket)
+            .select_related("sender")
+            .prefetch_related("reads")
+            .order_by("-created_at")
+        )
+
+        paginator = MessagePagination()
+
+        page = paginator.paginate_queryset(
+            messages,
+            request,
+        )
+
+        serializer = TicketMessageSerializer(
+            page,
+            many=True,
+            context={"request": request},
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
 
     def post(self, request, ticket_number):
         ticket = get_object_or_404(
@@ -398,11 +432,42 @@ class AgentTicketDetailView(APIView):
         return Response(serializer.data)
 
 
-class AgentTicketMessageCreateView(APIView):
+class AgentTicketMessageListCreateView(APIView):
     permission_classes = [
         IsAuthenticated,
         IsSupportAgent,
     ]
+
+    def get(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket,
+            ticket_number=ticket_number,
+        )
+
+        messages = (
+            TicketMessage.objects
+            .filter(ticket=ticket)
+            .select_related("sender")
+            .prefetch_related("reads")
+            .order_by("-created_at")
+        )
+
+        paginator = MessagePagination()
+
+        page = paginator.paginate_queryset(
+            messages,
+            request,
+        )
+
+        serializer = TicketMessageSerializer(
+            page,
+            many=True,
+            context={"request": request},
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
 
     def post(self, request, ticket_number):
         ticket = get_object_or_404(

@@ -11,23 +11,19 @@ class AgentTicketTests(APITestCase):
 
     def setUp(self):
         self.customer = User.objects.create_user(
-            phone_number="09120000001",
+            username="customer"
         )
 
         self.agent = User.objects.create_user(
-            phone_number="09120000002",
+            username="agent"
         )
         self.agent.is_staff = True
         self.agent.save()
 
-        self.other_user = User.objects.create_user(
-            phone_number="09120000003",
-        )
-
         self.ticket = Ticket.objects.create(
             user=self.customer,
-            ticket_number="TCK-253",
-            subject="مشکل پرداخت",
+            ticket_number="TCK-100",
+            subject="Test Ticket",
             priority=Ticket.Priority.NORMAL,
             status=Ticket.Status.OPEN,
         )
@@ -36,14 +32,14 @@ class AgentTicketTests(APITestCase):
             ticket=self.ticket,
             sender=self.customer,
             message_type=TicketMessage.MessageType.TEXT,
-            text="پرداخت من انجام نشده",
+            text="پیام تست",
         )
 
-    def test_agent_can_list_tickets(self):
         self.client.force_authenticate(
             user=self.agent
         )
 
+    def test_agent_can_list_tickets(self):
         response = self.client.get(
             "/api/v1/support/agent/tickets/"
         )
@@ -63,10 +59,6 @@ class AgentTicketTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_agent_can_view_ticket(self):
-        self.client.force_authenticate(
-            user=self.agent
-        )
-
         response = self.client.get(
             f"/api/v1/support/agent/tickets/"
             f"{self.ticket.ticket_number}/"
@@ -75,14 +67,19 @@ class AgentTicketTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
             response.data["ticket_number"],
-            "TCK-253",
+            "TCK-100",
         )
+
+    def test_agent_can_list_ticket_messages(self):
+        response = self.client.get(
+            f"/api/v1/support/agent/tickets/"
+            f"{self.ticket.ticket_number}/messages/"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["count"], 1)
 
     def test_agent_can_send_message(self):
-        self.client.force_authenticate(
-            user=self.agent
-        )
-
         response = self.client.post(
             f"/api/v1/support/agent/tickets/"
             f"{self.ticket.ticket_number}/messages/",
@@ -125,10 +122,6 @@ class AgentTicketTests(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_agent_can_mark_messages_as_read(self):
-        self.client.force_authenticate(
-            user=self.agent
-        )
-
         response = self.client.post(
             f"/api/v1/support/agent/tickets/"
             f"{self.ticket.ticket_number}/read/"

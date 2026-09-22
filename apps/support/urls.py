@@ -3,12 +3,12 @@ from django.urls import path
 from .views import (
     AgentTicketDetailView,
     AgentTicketListView,
-    AgentTicketMessageCreateView,
+    AgentTicketMessageListCreateView,
     TicketCloseView,
     TicketDetailView,
     TicketListCreateView,
     TicketMarkReadView,
-    TicketMessageCreateView,
+    TicketMessageListCreateView,
     TicketReopenView,
     TicketSummaryView,
     AgentTicketMarkReadView,
@@ -41,8 +41,8 @@ urlpatterns = [
 
     path(
         "tickets/<str:ticket_number>/messages/",
-        TicketMessageCreateView.as_view(),
-        name="ticket-message-create",
+        TicketMessageListCreateView.as_view(),
+        name="ticket-message-list-create",
     ),
 
     path(
@@ -77,8 +77,8 @@ urlpatterns = [
 
     path(
         "agent/tickets/<str:ticket_number>/messages/",
-        AgentTicketMessageCreateView.as_view(),
-        name="agent-ticket-message-create",
+        AgentTicketMessageListCreateView.as_view(),
+        name="agent-ticket-message-list-create",
     ),
 
     path(
