@@ -447,3 +447,36 @@ class AgentTicketMessageCreateView(APIView):
             ).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class AgentTicketMarkReadView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSupportAgent,
+    ]
+
+    def post(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket,
+            ticket_number=ticket_number,
+        )
+
+        unread_messages = (
+            ticket.messages
+            .exclude(reads__user=request.user)
+        )
+
+        MessageRead.objects.bulk_create(
+            [
+                MessageRead(
+                    message=message,
+                    user=request.user,
+                )
+                for message in unread_messages
+            ],
+            ignore_conflicts=True,
+        )
+
+        return Response({
+            "detail": "پیام‌ها خوانده شدند."
+        })

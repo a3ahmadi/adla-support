@@ -11,6 +11,7 @@ from .views import (
     TicketMessageCreateView,
     TicketReopenView,
     TicketSummaryView,
+    AgentTicketMarkReadView,
 )
 
 
@@ -76,6 +77,12 @@ urlpatterns = [
         "agent/tickets/<str:ticket_number>/messages/",
         AgentTicketMessageCreateView.as_view(),
         name="agent-ticket-message-create",
+    ),
+
+    path(
+        "agent/tickets/<str:ticket_number>/read/",
+        AgentTicketMarkReadView.as_view(),
+        name="agent-ticket-mark-read",
     ),
 
 ]
