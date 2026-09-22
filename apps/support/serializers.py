@@ -59,11 +59,7 @@ class TicketMessageSerializer(serializers.ModelSerializer):
         ) or user.get_username()
 
     def get_is_read(self, obj):
-        user = self.context["request"].user
-
-        return obj.reads.filter(
-            user=user
-        ).exists()
+        return getattr(obj, "is_read_for_user", False)
 
     def validate(self, attrs):
         validate_message_content(

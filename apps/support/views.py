@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Exists, OuterRef
 from django.shortcuts import get_object_or_404
 
 from .pagination import TicketPagination, MessagePagination
@@ -172,11 +172,17 @@ class TicketMessageListCreateView(APIView):
         )
 
         messages = (
-            TicketMessage.objects
-            .filter(ticket=ticket)
+            ticket.messages
             .select_related("sender")
-            .prefetch_related("reads")
-            .order_by("-created_at")
+            .annotate(
+                is_read_for_user=Exists(
+                    MessageRead.objects.filter(
+                        message_id=OuterRef("pk"),
+                        user=request.user,
+                    )
+                )
+            )
+            .order_by("created_at")
         )
 
         paginator = MessagePagination()
@@ -445,11 +451,17 @@ class AgentTicketMessageListCreateView(APIView):
         )
 
         messages = (
-            TicketMessage.objects
-            .filter(ticket=ticket)
+            ticket.messages
             .select_related("sender")
-            .prefetch_related("reads")
-            .order_by("-created_at")
+            .annotate(
+                is_read_for_user=Exists(
+                    MessageRead.objects.filter(
+                        message_id=OuterRef("pk"),
+                        user=request.user,
+                    )
+                )
+            )
+            .order_by("created_at")
         )
 
         paginator = MessagePagination()
