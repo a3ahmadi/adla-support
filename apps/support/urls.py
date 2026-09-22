@@ -1,6 +1,9 @@
 from django.urls import path
 
 from .views import (
+    AgentTicketDetailView,
+    AgentTicketListView,
+    AgentTicketMessageCreateView,
     TicketCloseView,
     TicketDetailView,
     TicketListCreateView,
@@ -56,4 +59,23 @@ urlpatterns = [
         TicketReopenView.as_view(),
         name="ticket-reopen",
     ),
+
+    path(
+        "agent/tickets/",
+        AgentTicketListView.as_view(),
+        name="agent-ticket-list",
+    ),
+
+    path(
+        "agent/tickets/<str:ticket_number>/",
+        AgentTicketDetailView.as_view(),
+        name="agent-ticket-detail",
+    ),
+
+    path(
+        "agent/tickets/<str:ticket_number>/messages/",
+        AgentTicketMessageCreateView.as_view(),
+        name="agent-ticket-message-create",
+    ),
+
 ]

@@ -54,7 +54,9 @@ def send_message(
     file=None,
 ):
     if ticket.status == Ticket.Status.CLOSED:
-        raise ValueError("Closed tickets cannot receive new messages.")
+        raise ValueError(
+            "Closed tickets cannot receive new messages."
+        )
 
     message = TicketMessage.objects.create(
         ticket=ticket,
@@ -64,10 +66,10 @@ def send_message(
         file=file,
     )
 
-    if sender == ticket.user:
-        ticket.status = Ticket.Status.WAITING_FOR_RESPONSE
-    else:
+    if sender.is_staff:
         ticket.status = Ticket.Status.OPEN
+    else:
+        ticket.status = Ticket.Status.WAITING_FOR_RESPONSE
 
     ticket.save(
         update_fields=[

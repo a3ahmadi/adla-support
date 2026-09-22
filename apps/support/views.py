@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Ticket, TicketMessage, MessageRead
-from .permissions import IsTicketOwner
+from .permissions import IsTicketOwner, IsSupportAgent
 from .serializers import (
     TicketCreateSerializer,
     TicketDetailSerializer,
@@ -299,4 +299,151 @@ class TicketReopenView(APIView):
                 ticket,
                 context={"request": request},
             ).data
+        )
+
+
+class AgentTicketListView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSupportAgent,
+    ]
+
+    def get(self, request):
+        tickets = (
+            Ticket.objects
+            .select_related("user")
+            .annotate(
+                unread_count=Count(
+                    "messages",
+                    filter=~Q(
+                        messages__reads__user=request.user
+                    ),
+                    distinct=True,
+                )
+            )
+            .order_by("-updated_at")
+        )
+
+        status_filter = request.query_params.get("status")
+        priority_filter = request.query_params.get("priority")
+        search = request.query_params.get("search")
+
+        if status_filter:
+            if status_filter not in dict(Ticket.Status.choices):
+                return Response(
+                    {"detail": "وضعیت نامعتبر است."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            tickets = tickets.filter(
+                status=status_filter
+            )
+
+        if priority_filter:
+            if priority_filter not in dict(Ticket.Priority.choices):
+                return Response(
+                    {"detail": "اولویت نامعتبر است."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            tickets = tickets.filter(
+                priority=priority_filter
+            )
+
+        if search:
+            tickets = tickets.filter(
+                Q(ticket_number__icontains=search)
+                | Q(subject__icontains=search)
+                | Q(user__phone_number__icontains=search)
+            )
+
+        paginator = TicketPagination()
+
+        page = paginator.paginate_queryset(
+            tickets,
+            request,
+        )
+
+        serializer = TicketListSerializer(
+            page,
+            many=True,
+            context={"request": request},
+        )
+
+        return paginator.get_paginated_response(
+            serializer.data
+        )
+
+
+class AgentTicketDetailView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSupportAgent,
+    ]
+
+    def get(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket.objects.prefetch_related(
+                "messages__reads",
+                "messages__sender",
+            ),
+            ticket_number=ticket_number,
+        )
+
+        serializer = TicketDetailSerializer(
+            ticket,
+            context={"request": request},
+        )
+
+        return Response(serializer.data)
+
+
+class AgentTicketMessageCreateView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsSupportAgent,
+    ]
+
+    def post(self, request, ticket_number):
+        ticket = get_object_or_404(
+            Ticket,
+            ticket_number=ticket_number,
+        )
+
+        if ticket.status == Ticket.Status.CLOSED:
+            return Response(
+                {
+                    "detail": "این تیکت بسته شده است."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = TicketMessageSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        message = send_message(
+            ticket=ticket,
+            sender=request.user,
+            message_type=serializer.validated_data[
+                "message_type"
+            ],
+            text=serializer.validated_data.get(
+                "text",
+                "",
+            ),
+            file=serializer.validated_data.get(
+                "file"
+            ),
+        )
+
+        return Response(
+            TicketMessageSerializer(
+                message,
+                context={"request": request},
+            ).data,
+            status=status.HTTP_201_CREATED,
         )
