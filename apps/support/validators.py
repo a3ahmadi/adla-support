@@ -1,6 +1,8 @@
 from pathlib import Path
-from .models import TicketMessage
+
 from django.core.exceptions import ValidationError
+
+from .models import TicketMessage
 
 
 MAX_IMAGE_SIZE = 5 * 1024 * 1024
@@ -14,12 +16,27 @@ ALLOWED_IMAGE_EXTENSIONS = {
     ".webp",
 }
 
+ALLOWED_IMAGE_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
+
+
 ALLOWED_VOICE_EXTENSIONS = {
     ".mp3",
     ".wav",
     ".ogg",
     ".webm",
     ".m4a",
+}
+
+ALLOWED_VOICE_CONTENT_TYPES = {
+    "audio/mpeg",
+    "audio/wav",
+    "audio/ogg",
+    "audio/webm",
+    "audio/mp4",
 }
 
 
@@ -36,6 +53,17 @@ def validate_image_file(file):
             "فرمت تصویر مجاز نیست."
         )
 
+    content_type = getattr(
+        file,
+        "content_type",
+        None,
+    )
+
+    if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
+        raise ValidationError(
+            "نوع فایل تصویر مجاز نیست."
+        )
+
 
 def validate_voice_file(file):
     if file.size > MAX_VOICE_SIZE:
@@ -48,6 +76,17 @@ def validate_voice_file(file):
     if extension not in ALLOWED_VOICE_EXTENSIONS:
         raise ValidationError(
             "فرمت فایل صوتی مجاز نیست."
+        )
+
+    content_type = getattr(
+        file,
+        "content_type",
+        None,
+    )
+
+    if content_type not in ALLOWED_VOICE_CONTENT_TYPES:
+        raise ValidationError(
+            "نوع فایل صوتی مجاز نیست."
         )
 
 
